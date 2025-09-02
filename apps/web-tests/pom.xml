@@ -1,0 +1,89 @@
+<!-- apps/web-tests/pom.xml -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+    <groupId>com.yourcompany.automation</groupId>
+    <artifactId>selenium-enterprise</artifactId> <!-- Ensure this matches the root artifactId -->
+    <version>1.0.0-SNAPSHOT</version>
+    <!-- The path MUST be two levels up -->
+    <relativePath>../..</relativePath>
+</parent>
+
+    <artifactId>web-tests</artifactId>
+    <name>Web Application Tests</name>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- Dependency on our core framework -->
+        <dependency>
+            <groupId>com.yourcompany.automation</groupId>
+            <artifactId>framework</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- TestNG for running tests -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Allure for reporting -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Logging implementation for test execution -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- This is the Maven Surefire Plugin, responsible for running your TestNG tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version> <!-- Use a recent version -->
+                <configuration>
+                    <!-- This line is the key: it enables the AspectJ weaver for Allure annotations -->
+                    <argLine>
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+                    </argLine>
+
+                    <!-- This tells Surefire which TestNG suite to run by default -->
+                    <suiteXmlFiles>
+                        <suiteXmlFile>testng/local.xml</suiteXmlFile>
+                    </suiteXmlFiles>
+                </configuration>
+                <dependencies>
+                    <!-- This provides the AspectJ weaver dependency to the Surefire plugin -->
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjweaver</artifactId>
+                        <version>${aspectj.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- This is the Allure Maven Plugin, responsible for generating the report -->
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version> <!-- A stable version of the allure-maven plugin -->
+                <configuration>
+                    <!-- This links the report to the Allure version you are using -->
+                    <reportVersion>${allure.version}</reportVersion>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

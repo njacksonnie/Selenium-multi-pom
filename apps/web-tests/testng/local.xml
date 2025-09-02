@@ -1,0 +1,12 @@
+<!-- apps/web-tests/testng/local.xml -->
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="Local" parallel="methods" thread-count="4">
+  <parameter name="runTarget" value="local"/>
+  <parameter name="gridUrl" value="http://localhost:4444/wd/hub"/>
+  <parameter name="browser" value="chrome"/>
+  <test name="Smoke">
+    <classes>
+      <class name="suites.SmokeSuite"/>
+    </classes>
+  </test>
+</suite>
