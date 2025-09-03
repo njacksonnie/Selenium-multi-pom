@@ -1,9 +1,10 @@
 package core.options;
 
-import org.openqa.selenium.firefox.FirefoxOptions;
 import java.util.Properties;
+import org.openqa.selenium.firefox.FirefoxOptions;
 
-public final class FirefoxOptionsProvider extends AbstractOptionsProvider<FirefoxOptions> {
+public final class FirefoxOptionsProvider
+        extends AbstractOptionsProvider<FirefoxOptions> {
 
     public FirefoxOptionsProvider(Properties properties) {
         super(properties);
@@ -13,17 +14,12 @@ public final class FirefoxOptionsProvider extends AbstractOptionsProvider<Firefo
     public FirefoxOptions build() {
         FirefoxOptions options = new FirefoxOptions();
 
-        // Headless execution
         if (getBooleanProperty("firefox.headless", false)) {
             options.addArguments("-headless");
         }
-
-        // Private browsing
         if (getBooleanProperty("firefox.private", false)) {
             options.addArguments("-private");
         }
-
-        // Accept insecure certificates (W3C standard capability)
         if (getBooleanProperty("firefox.acceptInsecureCerts", false)) {
             options.setAcceptInsecureCerts(true);
         }

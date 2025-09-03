@@ -1,12 +1,10 @@
 package core.options;
 
-import org.openqa.selenium.chrome.ChromeOptions;
 import java.util.Properties;
+import org.openqa.selenium.chrome.ChromeOptions;
 
-/**
- * Builds ChromeOptions from properties for CI-friendly execution.
- */
-public final class ChromeOptionsProvider extends AbstractOptionsProvider<ChromeOptions> {
+public final class ChromeOptionsProvider
+        extends AbstractOptionsProvider<ChromeOptions> {
 
     public ChromeOptionsProvider(Properties properties) {
         super(properties);
@@ -15,6 +13,7 @@ public final class ChromeOptionsProvider extends AbstractOptionsProvider<ChromeO
     @Override
     public ChromeOptions build() {
         ChromeOptions options = new ChromeOptions();
+
         if (getBooleanProperty("chrome.headless", false)) {
             options.addArguments("--headless=new");
         }
@@ -34,6 +33,7 @@ public final class ChromeOptionsProvider extends AbstractOptionsProvider<ChromeO
         if (windowSize != null && !windowSize.isBlank()) {
             options.addArguments("--window-size=" + windowSize.trim());
         }
+
         return options;
     }
 }

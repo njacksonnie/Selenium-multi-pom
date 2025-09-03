@@ -7,35 +7,40 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.Meter;
-
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * Lightweight, thread-safe facade for emitting OpenTelemetry metrics for Selenium tests.
- * - Injection-first: accept OpenTelemetry or Meter and avoid early GlobalOpenTelemetry binding.
- * - Low-cardinality attributes with selenium.* namespace.
- * - High-precision timing via System.nanoTime().
- */
 public final class Telemetry {
 
     private static volatile Meter meter;
 
     private static final boolean ALLOW_GLOBAL_FALLBACK =
             Boolean.parseBoolean(System.getProperty("otel.allow.global.fallback", "true"));
+
     private static final String DEFAULT_METER_NAME =
             System.getProperty("otel.meter.name", "selenium.framework");
+
     private static final String DEFAULT_METER_VERSION =
             System.getProperty("otel.meter.version", "1.0.0");
+
     private static final String DEFAULT_SCHEMA_URL =
             System.getProperty("otel.meter.schema_url", "");
 
-    private static final AttributeKey<String> ATTR_SUITE = AttributeKey.stringKey("selenium.test.suite");
-    private static final AttributeKey<String> ATTR_TEST = AttributeKey.stringKey("selenium.test.name");
-    private static final AttributeKey<String> ATTR_BROWSER = AttributeKey.stringKey("selenium.browser.name");
-    private static final AttributeKey<String> ATTR_PAGE = AttributeKey.stringKey("selenium.page.name");
-    private static final AttributeKey<String> ATTR_ERROR = AttributeKey.stringKey("selenium.error.type");
+    private static final AttributeKey<String> ATTR_SUITE =
+            AttributeKey.stringKey("selenium.test.suite");
+
+    private static final AttributeKey<String> ATTR_TEST =
+            AttributeKey.stringKey("selenium.test.name");
+
+    private static final AttributeKey<String> ATTR_BROWSER =
+            AttributeKey.stringKey("selenium.browser.name");
+
+    private static final AttributeKey<String> ATTR_PAGE =
+            AttributeKey.stringKey("selenium.page.name");
+
+    private static final AttributeKey<String> ATTR_ERROR =
+            AttributeKey.stringKey("selenium.error.type");
 
     private static volatile LongCounter TESTS_STARTED;
     private static volatile LongCounter TESTS_PASSED;
@@ -51,8 +56,10 @@ public final class Telemetry {
     public static synchronized void init(OpenTelemetry otel) {
         Objects.requireNonNull(otel, "OpenTelemetry must not be null");
         var meterProvider = otel.getMeterProvider();
-        var builder = meterProvider.meterBuilder(DEFAULT_METER_NAME)
-                .setInstrumentationVersion(DEFAULT_METER_VERSION);
+        var builder =
+                meterProvider
+                        .meterBuilder(DEFAULT_METER_NAME)
+                        .setInstrumentationVersion(DEFAULT_METER_VERSION);
         if (!DEFAULT_SCHEMA_URL.isBlank()) {
             builder.setSchemaUrl(DEFAULT_SCHEMA_URL);
         }
@@ -66,12 +73,15 @@ public final class Telemetry {
 
     public static synchronized void initFromGlobal() {
         if (!ALLOW_GLOBAL_FALLBACK) {
-            throw new IllegalStateException("Global fallback disabled. Inject OpenTelemetry or Meter.");
+            throw new IllegalStateException(
+                    "Global fallback disabled. Inject OpenTelemetry or Meter.");
         }
         OpenTelemetry global = GlobalOpenTelemetry.get();
         var meterProvider = global.getMeterProvider();
-        var builder = meterProvider.meterBuilder(DEFAULT_METER_NAME)
-                .setInstrumentationVersion(DEFAULT_METER_VERSION);
+        var builder =
+                meterProvider
+                        .meterBuilder(DEFAULT_METER_NAME)
+                        .setInstrumentationVersion(DEFAULT_METER_VERSION);
         if (!DEFAULT_SCHEMA_URL.isBlank()) {
             builder.setSchemaUrl(DEFAULT_SCHEMA_URL);
         }
@@ -80,28 +90,34 @@ public final class Telemetry {
 
     private static void setMeter(Meter m) {
         meter = m;
-        TESTS_STARTED = meter.counterBuilder("test.execution.started")
-                .setDescription("Total number of tests started.")
-                .build();
-        TESTS_PASSED = meter.counterBuilder("test.execution.passed")
-                .setDescription("Total number of tests that passed.")
-                .build();
-        TESTS_FAILED = meter.counterBuilder("test.execution.failed")
-                .setDescription("Total number of tests that failed.")
-                .build();
-        TESTS_SKIPPED = meter.counterBuilder("test.execution.skipped")
-                .setDescription("Total number of tests that were skipped.")
-                .build();
-        PAGE_LOAD_DURATION_MS = meter.histogramBuilder("page.load.duration")
-                .ofLongs()
-                .setUnit("ms")
-                .setDescription("Duration of page load operations in milliseconds.")
-                .build();
-        TEST_EXECUTION_DURATION_MS = meter.histogramBuilder("test.execution.duration")
-                .ofLongs()
-                .setUnit("ms")
-                .setDescription("Execution duration of a single test method in milliseconds.")
-                .build();
+        TESTS_STARTED =
+                meter.counterBuilder("test.execution.started")
+                        .setDescription("Total number of tests started.")
+                        .build();
+        TESTS_PASSED =
+                meter.counterBuilder("test.execution.passed")
+                        .setDescription("Total number of tests that passed.")
+                        .build();
+        TESTS_FAILED =
+                meter.counterBuilder("test.execution.failed")
+                        .setDescription("Total number of tests that failed.")
+                        .build();
+        TESTS_SKIPPED =
+                meter.counterBuilder("test.execution.skipped")
+                        .setDescription("Total number of tests that were skipped.")
+                        .build();
+        PAGE_LOAD_DURATION_MS =
+                meter.histogramBuilder("page.load.duration")
+                        .ofLongs()
+                        .setUnit("ms")
+                        .setDescription("Duration of page load operations in milliseconds.")
+                        .build();
+        TEST_EXECUTION_DURATION_MS =
+                meter.histogramBuilder("test.execution.duration")
+                        .ofLongs()
+                        .setUnit("ms")
+                        .setDescription("Execution duration of a single test method in milliseconds.")
+                        .build();
     }
 
     private static Meter requireMeter() {
@@ -113,7 +129,8 @@ public final class Telemetry {
             initFromGlobal();
             return meter;
         }
-        throw new IllegalStateException("Telemetry not initialized. Call Telemetry.init(OpenTelemetry|Meter).");
+        throw new IllegalStateException(
+                "Telemetry not initialized. Call Telemetry.init(OpenTelemetry|Meter).");
     }
 
     public static void testStarted(String suite, String testName, String browser) {
@@ -129,12 +146,14 @@ public final class Telemetry {
         TESTS_PASSED.add(1, baseAttrs(suite, testName, browser));
     }
 
-    public static void testFailed(String suite, String testName, String browser, String errorType) {
+    public static void testFailed(
+            String suite, String testName, String browser, String errorType) {
         requireMeter();
         recordTestDurationIfStarted(suite, testName, browser);
-        Attributes attrs = baseAttrs(suite, testName, browser).toBuilder()
-                .put(ATTR_ERROR, truncate(safeStr(errorType), 64))
-                .build();
+        Attributes attrs =
+                baseAttrs(suite, testName, browser).toBuilder()
+                        .put(ATTR_ERROR, truncate(safeStr(errorType), 64))
+                        .build();
         TESTS_FAILED.add(1, attrs);
     }
 
@@ -149,7 +168,8 @@ public final class Telemetry {
         return new TimerContext(safeStr(pageName), safeStr(browser));
     }
 
-    private static void recordTestDurationIfStarted(String suite, String testName, String browser) {
+    private static void recordTestDurationIfStarted(
+            String suite, String testName, String browser) {
         TestKey key = TestKey.of(suite, testName, browser);
         Long startNanos = testStartNanos.remove(key);
         if (startNanos != null) {
@@ -168,8 +188,7 @@ public final class Telemetry {
         return Attributes.of(
                 ATTR_SUITE, safeStr(suite),
                 ATTR_TEST, safeStr(testName),
-                ATTR_BROWSER, safeStr(browser)
-        );
+                ATTR_BROWSER, safeStr(browser));
     }
 
     private static String safeStr(String s) {
@@ -177,7 +196,9 @@ public final class Telemetry {
     }
 
     private static String truncate(String s, int maxLength) {
-        if (s == null) return "unknown";
+        if (s == null) {
+            return "unknown";
+        }
         return (s.length() <= maxLength) ? s : s.substring(0, maxLength);
     }
 
@@ -201,9 +222,7 @@ public final class Telemetry {
             long elapsedMs = nanosToMillis(System.nanoTime() - startNanos);
             if (elapsedMs >= 0) {
                 PAGE_LOAD_DURATION_MS.record(
-                        elapsedMs,
-                        Attributes.of(ATTR_PAGE, pageName, ATTR_BROWSER, browser)
-                );
+                        elapsedMs, Attributes.of(ATTR_PAGE, pageName, ATTR_BROWSER, browser));
             }
         }
     }

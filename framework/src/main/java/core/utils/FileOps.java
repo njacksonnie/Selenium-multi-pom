@@ -1,7 +1,5 @@
 package core.utils;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -17,12 +15,8 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-/**
- * File utilities for tests and frameworks.
- * - All methods validate arguments.
- * - Uses try-with-resources for IO safety.
- * - Avoids raw types; uses generics for type safety.
- */
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public final class FileOps {
 
     private static final Predicate<Path> DEFAULT_DOWNLOAD_TEMP_PREDICATE =
@@ -109,13 +103,15 @@ public final class FileOps {
             return;
         }
         try (Stream<Path> walk = Files.walk(root)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            walk.sorted(Comparator.reverseOrder())
+                    .forEach(
+                            p -> {
+                                try {
+                                    Files.deleteIfExists(p);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
         }
     }
 
@@ -124,7 +120,8 @@ public final class FileOps {
             return;
         }
         try (Stream<Path> walk = Files.walk(root)) {
-            walk.sorted(Comparator.reverseOrder())
+            walk
+                    .sorted(Comparator.reverseOrder())
                     .forEach(
                             p -> {
                                 try {
@@ -152,13 +149,11 @@ public final class FileOps {
             return Optional.empty();
         }
         final String pattern = normalizeGlob(glob);
-        // Try provider glob via DirectoryStream and stream it with StreamSupport.
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, pattern)) {
             try (Stream<Path> stream = StreamSupport.stream(ds.spliterator(), false)) {
                 return stream.max(Comparator.comparingLong(FileOps::lastModifiedSafe));
             }
         } catch (PatternSyntaxException pse) {
-            // Fallback: list all and manually filter by simple matcher.
             try (Stream<Path> stream = Files.list(dir)) {
                 return stream
                         .filter(p -> simpleMatches(p.getFileName().toString(), pattern))
@@ -167,7 +162,8 @@ public final class FileOps {
         }
     }
 
-    public static Path waitForDownload(Path dir, String expectedNameOrGlob, Duration timeout)
+    public static Path waitForDownload(
+            Path dir, String expectedNameOrGlob, Duration timeout)
             throws IOException, InterruptedException {
         if (dir == null) {
             throw new IllegalArgumentException("dir must not be null");
@@ -215,8 +211,6 @@ public final class FileOps {
         return candidate;
     }
 
-    // Internal helpers
-
     private static Path safeEnsureParent(Path path) throws IOException {
         final Path parent = path.getParent();
         if (parent != null) {
@@ -237,7 +231,9 @@ public final class FileOps {
             return Optional.empty();
         } catch (PatternSyntaxException pse) {
             try (Stream<Path> stream = Files.list(dir)) {
-                return stream.filter(p -> simpleMatches(p.getFileName().toString(), glob)).findFirst();
+                return stream
+                        .filter(p -> simpleMatches(p.getFileName().toString(), glob))
+                        .findFirst();
             }
         }
     }
@@ -255,7 +251,6 @@ public final class FileOps {
         return false;
     }
 
-    // Minimal wildcard matcher supporting a single '*'.
     private static boolean simpleMatches(String name, String glob) {
         if ("*".equals(glob)) {
             return true;

@@ -16,28 +16,13 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 
-/**
- * Lightweight screenshot utilities: capture to bytes/base64 and save to disk.
- * <p>
- * Design:
- * - Uses OutputType.BYTES to avoid temp files and minimize I/O.
- * - Graceful failures: return empty byte[] or "" and log at debug/trace to keep tests running.
- * - try-with-resources on I/O, parent dir ensured, and unique-save helper for parallelism.
- * - No dependency on reporting; higher layers decide how to publish bytes.
- */
 public final class ScreenshotUtils {
 
     private static final Logger LOG = LoggingUtils.getLogger(ScreenshotUtils.class);
     private static final byte[] EMPTY = new byte[0];
 
-    private ScreenshotUtils() {
-        // Utility class
-    }
+    private ScreenshotUtils() {}
 
-    /**
-     * Capture viewport screenshot as PNG bytes.
-     * Returns empty array if driver is null/unsupported/fails.
-     */
     public static byte[] capturePng(WebDriver driver) {
         if (!(driver instanceof TakesScreenshot ts)) {
             LOG.debug("WebDriver does not implement TakesScreenshot; returning empty screenshot.");
@@ -56,10 +41,6 @@ public final class ScreenshotUtils {
         }
     }
 
-    /**
-     * Capture element screenshot as PNG bytes.
-     * Returns empty array if element is null or capture fails.
-     */
     public static byte[] capturePng(WebElement element) {
         if (element == null) {
             LOG.debug("WebElement is null; returning empty screenshot.");
@@ -78,10 +59,6 @@ public final class ScreenshotUtils {
         }
     }
 
-    /**
-     * Capture viewport screenshot as Base64 string (for systems that expect Base64).
-     * Returns empty string on failure.
-     */
     public static String captureBase64(WebDriver driver) {
         if (!(driver instanceof TakesScreenshot ts)) {
             LOG.debug("WebDriver does not implement TakesScreenshot; returning empty Base64.");
@@ -101,10 +78,6 @@ public final class ScreenshotUtils {
         }
     }
 
-    /**
-     * Save viewport screenshot as PNG file to the target path.
-     * Ensures parent directory exists; writes empty file if capture returns empty bytes.
-     */
     public static Path savePng(Path target, WebDriver driver) throws IOException {
         Objects.requireNonNull(target, "target must not be null");
         ensureParent(target);
@@ -114,16 +87,11 @@ public final class ScreenshotUtils {
         return target;
     }
 
-    /**
-     * Save viewport screenshot ensuring a unique sibling if the desired target already exists.
-     */
     public static Path savePngUnique(Path desiredTarget, WebDriver driver) throws IOException {
         Objects.requireNonNull(desiredTarget, "desiredTarget must not be null");
         Path unique = FileOps.uniqueSibling(desiredTarget);
         return savePng(unique, driver);
     }
-
-    // --- internal helpers ---
 
     private static void ensureParent(Path target) throws IOException {
         Path parent = target.getParent();
@@ -145,7 +113,7 @@ public final class ScreenshotUtils {
     }
 
     private static void logSaved(String kind, Path target, int length) {
-        Map<String, Object> ctx = Collections.singletonMap("bytes", Math.max(0, length));
-        LoggingUtils.info(LOG, ctx, "Saved {} to {}", kind == null ? "attachment" : kind, target);
+        Map<String, Object> ctx = Collections.singletonMap("bytes", length);
+        LoggingUtils.info(LOG, ctx, "Saved {} to {}", kind, target);
     }
 }

@@ -9,15 +9,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Loads configuration by merging, in order:
- * 1) defaults (empty),
- * 2) classpath profile file: config/<profile>.properties (if present),
- * 3) external override file: -Dconfig.file=/path/file.properties (if present),
- * 4) Java System properties (-Dkey=value).
- *
- * Later sources override earlier ones.
- */
 public final class ConfigFactory {
 
     private static final Pattern ENV_PATTERN =
@@ -27,9 +18,12 @@ public final class ConfigFactory {
 
     public static Properties load(String profile) {
         Properties merged = new Properties();
+
         String cpResource = "config/" + profile + ".properties";
         try (InputStream in =
-                     Thread.currentThread().getContextClassLoader().getResourceAsStream(cpResource)) {
+                     Thread.currentThread()
+                             .getContextClassLoader()
+                             .getResourceAsStream(cpResource)) {
             if (in != null) {
                 Properties p = new Properties();
                 p.load(in);
@@ -50,7 +44,8 @@ public final class ConfigFactory {
                     expandEnvPlaceholders(p);
                     merged = merge(merged, p);
                 } catch (Exception e) {
-                    throw new IllegalStateException("Failed to load external config.file: " + externalPath, e);
+                    throw new IllegalStateException(
+                            "Failed to load external config.file: " + externalPath, e);
                 }
             }
         }
@@ -59,6 +54,7 @@ public final class ConfigFactory {
         Properties sysStringsOnly = copyStringProperties(sys);
         expandEnvPlaceholders(sysStringsOnly);
         merged = merge(merged, sysStringsOnly);
+
         return merged;
     }
 

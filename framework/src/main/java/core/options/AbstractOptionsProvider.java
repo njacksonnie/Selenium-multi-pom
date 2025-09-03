@@ -1,8 +1,8 @@
 package core.options;
 
-import org.openqa.selenium.remote.AbstractDriverOptions;
 import java.util.Objects;
 import java.util.Properties;
+import org.openqa.selenium.remote.AbstractDriverOptions;
 
 public abstract class AbstractOptionsProvider<T extends AbstractDriverOptions<?>> {
 

@@ -10,29 +10,17 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.WebElement; // Optional if you add element attachment
+import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Allure attachment helpers for screenshots, page source, text, and arbitrary bytes.
- *
- * Delegates screenshot capture to core.utils.ScreenshotUtils to avoid duplication and
- * keep utilities free of reporting concerns.
- */
 public final class ReportAttachments {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReportAttachments.class);
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
-    private ReportAttachments() {
-        // Utility class: not instantiable.
-    }
+    private ReportAttachments() {}
 
-    /**
-     * Screenshot attachment that leverages ScreenshotUtils for capture and preserves Allure metadata.
-     * Returns empty bytes on failure (consistent with repository conventions).
-     */
     @Attachment(value = "{name}", type = "image/png")
     public static byte[] attachScreenshot(String name, WebDriver driver) {
         final byte[] png = ScreenshotUtils.capturePng(driver);
@@ -42,7 +30,6 @@ public final class ReportAttachments {
         return png;
     }
 
-    // Optional: element-level screenshot helper using ScreenshotUtils, if desired.
     @Attachment(value = "{name}", type = "image/png")
     public static byte[] attachElementScreenshot(String name, WebElement element) {
         final byte[] png = ScreenshotUtils.capturePng(element);
@@ -52,10 +39,6 @@ public final class ReportAttachments {
         return png;
     }
 
-    /**
-     * Safely executes a data-producing operation, handling exceptions and logging failures.
-     * Retained for page source and textual attachments.
-     */
     private static byte[] executeSafely(String attachmentName, Supplier<byte[]> supplier) {
         try {
             return supplier.get();
@@ -86,27 +69,23 @@ public final class ReportAttachments {
         return (contentType == null || contentType.isBlank()) ? fallback : contentType.trim();
     }
 
-    // --- Page Source Attachment ---
-
     @Attachment(value = "{name}", type = "text/html", fileExtension = ".html")
     public static byte[] attachPageSource(String name, WebDriver driver) {
-        return executeSafely(name, () -> {
-            if (driver == null) {
-                LOG.debug("WebDriver is null; cannot get page source for '{}'.", name);
-                return EMPTY_BYTE_ARRAY;
-            }
-            return toUtf8(driver.getPageSource());
-        });
+        return executeSafely(
+                name,
+                () -> {
+                    if (driver == null) {
+                        LOG.debug("WebDriver is null; cannot get page source for '{}'.", name);
+                        return EMPTY_BYTE_ARRAY;
+                    }
+                    return toUtf8(driver.getPageSource());
+                });
     }
-
-    // --- Text Attachment ---
 
     @Attachment(value = "{name}", type = "text/plain", fileExtension = ".txt")
     public static byte[] attachText(String name, String content) {
         return toUtf8(content);
     }
-
-    // --- JSON/XML/YAML helpers for correct previews ---
 
     @Attachment(value = "{name}", type = "application/json", fileExtension = ".json")
     public static byte[] attachJson(String name, String json) {
@@ -123,29 +102,20 @@ public final class ReportAttachments {
         return toUtf8(yaml);
     }
 
-    // --- Arbitrary Bytes via addAttachment (streamed) ---
-
-    /**
-     * Adds arbitrary bytes as an attachment using Allure.addAttachment. Safe defaults applied.
-     * This method does not rely on AspectJ interception and works without @Attachment support.
-     */
-    public static void attachBytes(String name, byte[] data, String contentType, String fileExtension) {
+    public static void attachBytes(
+            String name, byte[] data, String contentType, String fileExtension) {
         final byte[] content = Optional.ofNullable(data).orElse(EMPTY_BYTE_ARRAY);
         final String ct = safeContentType(contentType, "application/octet-stream");
         final String ext = normalizeExtension(fileExtension, ".bin");
         try (InputStream is = new ByteArrayInputStream(content)) {
             Allure.addAttachment(name, ct, is, ext);
         } catch (java.io.IOException e) {
-            // Highly unlikely with ByteArrayInputStream; log just in case.
             LOG.error("Failed to close input stream for attachment '{}'", name, e);
         }
     }
 
-    /**
-     * Stream-friendly overload to avoid large array allocations for big payloads.
-     * Caller is responsible for closing the provided InputStream; Allure reads the stream immediately.
-     */
-    public static void attachStream(String name, InputStream data, String contentType, String fileExtension) {
+    public static void attachStream(
+            String name, InputStream data, String contentType, String fileExtension) {
         if (data == null) {
             Allure.addAttachment(
                     name,
