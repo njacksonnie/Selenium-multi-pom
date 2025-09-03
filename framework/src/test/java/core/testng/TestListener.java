@@ -9,7 +9,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -18,16 +17,6 @@ import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
-/**
- * Cohesive TestNG listener that integrates logging, telemetry, and Allure attachments.
- *
- * - Adds MDC (suite/test/browser) for each test to ensure contextual logs.
- * - Logs START/END with durations using LoggingUtils.StepTimer.
- * - Emits OpenTelemetry counters and duration histograms.
- * - On failures, attaches screenshot, page source, and stack trace to Allure.
- *
- * Thread-safe per test via ThreadLocal; avoids cross-thread leakage in parallel runs.
- */
 public final class TestListener implements ITestListener {
 
     private static final Logger LOG = LoggingUtils.getLogger(TestListener.class);
@@ -37,13 +26,13 @@ public final class TestListener implements ITestListener {
 
     @Override
     public void onStart(ITestContext context) {
-        Map<String, String> ctx = baseCtx(context, null, currentBrowser());
+        Map<String, Object> ctx = baseCtx(context, null, currentBrowser());
         LoggingUtils.info(LOG, ctx, "TestNG context START: {}", safe(context.getName()));
     }
 
     @Override
     public void onFinish(ITestContext context) {
-        Map<String, String> ctx = baseCtx(context, null, currentBrowser());
+        Map<String, Object> ctx = baseCtx(context, null, currentBrowser());
         LoggingUtils.info(LOG, ctx, "TestNG context FINISH: {}", safe(context.getName()));
     }
 
@@ -52,12 +41,16 @@ public final class TestListener implements ITestListener {
         String suite = suiteName(result.getTestContext());
         String test = testName(result);
         String browser = currentBrowser();
-        Map<String, String> ctx = ctx(suite, test, browser);
-        MDCContext mdc = MDCContext.of(ctx);
+
+        Map<String, Object> ctx = ctx(suite, test, browser);
+        MDCContext mdc = MDCContext.of(Map.of("suite", suite, "test", test, "browser", browser));
         MDC_CTX.set(mdc);
+
         Telemetry.testStarted(suite, test, browser);
+
         LoggingUtils.StepTimer timer = LoggingUtils.step(LOG, ctx, "TEST start: " + test);
         TIMER.set(timer);
+
         LoggingUtils.info(LOG, ctx, "BEGIN {}", test);
     }
 
@@ -66,9 +59,11 @@ public final class TestListener implements ITestListener {
         String suite = suiteName(result.getTestContext());
         String test = testName(result);
         String browser = currentBrowser();
-        Map<String, String> ctx = ctx(suite, test, browser);
+
+        Map<String, Object> ctx = ctx(suite, test, browser);
         Telemetry.testPassed(suite, test, browser);
         LoggingUtils.info(LOG, ctx, "SUCCESS {}", test);
+
         closeTimerAndMdc();
     }
 
@@ -77,15 +72,17 @@ public final class TestListener implements ITestListener {
         String suite = suiteName(result.getTestContext());
         String test = testName(result);
         String browser = currentBrowser();
-        Map<String, String> ctx = ctx(suite, test, browser);
+
+        Map<String, Object> ctx = ctx(suite, test, browser);
         Throwable t = result.getThrowable();
         String errType = (t == null) ? "unknown" : t.getClass().getSimpleName();
         Telemetry.testFailed(suite, test, browser, errType);
-        // Failure artifacts
+
         WebDriver driver = DriverManager.get();
         ReportAttachments.attachScreenshot("Failure Screenshot: " + test, driver);
         ReportAttachments.attachPageSource("Page Source: " + test, driver);
         ReportAttachments.attachText("Error: " + test, throwableToString(t));
+
         LoggingUtils.error(LOG, ctx, "FAIL {}", t, test);
         closeTimerAndMdc();
     }
@@ -95,38 +92,41 @@ public final class TestListener implements ITestListener {
         String suite = suiteName(result.getTestContext());
         String test = testName(result);
         String browser = currentBrowser();
-        Map<String, String> ctx = ctx(suite, test, browser);
+
+        Map<String, Object> ctx = ctx(suite, test, browser);
         Telemetry.testSkipped(suite, test, browser);
         LoggingUtils.warn(LOG, ctx, "SKIPPED {}", test);
+
         closeTimerAndMdc();
     }
 
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-        // Treat as failure in logs/telemetry
         onTestFailure(result);
     }
 
-    // --- helpers ---
-
     private static String suiteName(ITestContext ctx) {
-        if (ctx == null || ctx.getSuite() == null || ctx.getSuite().getName() == null) return "unknown";
+        if (ctx == null || ctx.getSuite() == null || ctx.getSuite().getName() == null) {
+            return "unknown";
+        }
         return safe(ctx.getSuite().getName());
     }
 
     private static String testName(ITestResult result) {
-        if (result == null || result.getMethod() == null) return "unknown";
+        if (result == null || result.getMethod() == null) {
+            return "unknown";
+        }
         String n = result.getMethod().getMethodName();
         return (n == null || n.isBlank()) ? safe(result.getName()) : safe(n);
     }
 
-    private static Map<String, String> baseCtx(ITestContext ctx, String test, String browser) {
+    private static Map<String, Object> baseCtx(ITestContext ctx, String test, String browser) {
         String suite = suiteName(ctx);
         return ctx(suite, test == null ? "n/a" : test, browser);
     }
 
-    private static Map<String, String> ctx(String suite, String test, String browser) {
-        Map<String, String> map = new HashMap<>(4);
+    private static Map<String, Object> ctx(String suite, String test, String browser) {
+        Map<String, Object> map = new HashMap<>(4);
         map.put("suite", safe(suite));
         map.put("test", safe(test));
         map.put("browser", safe(browser));
@@ -135,7 +135,9 @@ public final class TestListener implements ITestListener {
 
     private static String currentBrowser() {
         WebDriver d = DriverManager.get();
-        if (d == null) return "unknown";
+        if (d == null) {
+            return "unknown";
+        }
         try {
             if (d instanceof RemoteWebDriver rwd) {
                 Capabilities c = rwd.getCapabilities();
@@ -168,7 +170,9 @@ public final class TestListener implements ITestListener {
     }
 
     private static String throwableToString(Throwable t) {
-        if (t == null) return "";
+        if (t == null) {
+            return "";
+        }
         try (StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw)) {
             t.printStackTrace(pw);
             pw.flush();

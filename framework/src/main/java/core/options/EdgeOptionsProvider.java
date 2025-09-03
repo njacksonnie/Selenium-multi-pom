@@ -1,9 +1,10 @@
 package core.options;
 
-import org.openqa.selenium.edge.EdgeOptions;
 import java.util.Properties;
+import org.openqa.selenium.edge.EdgeOptions;
 
-public final class EdgeOptionsProvider extends AbstractOptionsProvider<EdgeOptions> {
+public final class EdgeOptionsProvider
+        extends AbstractOptionsProvider<EdgeOptions> {
 
     public EdgeOptionsProvider(Properties properties) {
         super(properties);
@@ -13,12 +14,9 @@ public final class EdgeOptionsProvider extends AbstractOptionsProvider<EdgeOptio
     public EdgeOptions build() {
         EdgeOptions options = new EdgeOptions();
 
-        // Headless execution
         if (getBooleanProperty("edge.headless", false)) {
             options.addArguments("--headless=new");
         }
-
-        // Common CI/CD environment flags (same as Chrome)
         if (getBooleanProperty("edge.disableGpu", true)) {
             options.addArguments("--disable-gpu");
         }
@@ -28,12 +26,9 @@ public final class EdgeOptionsProvider extends AbstractOptionsProvider<EdgeOptio
         if (getBooleanProperty("edge.disableDevShm", true)) {
             options.addArguments("--disable-dev-shm-usage");
         }
-
-        // Other common settings
         if (getBooleanProperty("edge.inprivate", false)) {
-            options.addArguments("--inprivate"); // Edge's equivalent of incognito
+            options.addArguments("--inprivate");
         }
-
         String windowSize = getStringProperty("edge.windowSize");
         if (windowSize != null && !windowSize.isBlank()) {
             options.addArguments("--window-size=" + windowSize.trim());

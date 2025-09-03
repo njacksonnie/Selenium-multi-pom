@@ -1,3 +1,4 @@
+// LoggingUtils.java
 package core.utils;
 
 import java.time.Duration;
@@ -9,9 +10,6 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Centralized, thread-safe utilities for structured and contextual logging.
- */
 public final class LoggingUtils {
 
     private LoggingUtils() {}
@@ -20,7 +18,7 @@ public final class LoggingUtils {
         return LoggerFactory.getLogger(Objects.requireNonNull(clazz, "Class must not be null."));
     }
 
-    public static String buildContextPrefix(Map<String, ?> context) {
+    public static String buildContextPrefix(Map<String, Object> context) {
         if (context == null || context.isEmpty()) {
             return "";
         }
@@ -29,40 +27,42 @@ public final class LoggingUtils {
         return joiner.toString();
     }
 
-    public static void info(Logger log, Map<String, ?> context, String message, Object... args) {
+    public static void info(Logger log, Map<String, Object> context, String message, Object... args) {
         if (log != null && log.isInfoEnabled()) {
             log.info(buildContextPrefix(context) + (message == null ? "" : message), args);
         }
     }
 
-    public static void warn(Logger log, Map<String, ?> context, String message, Object... args) {
+    public static void warn(Logger log, Map<String, Object> context, String message, Object... args) {
         if (log != null && log.isWarnEnabled()) {
             log.warn(buildContextPrefix(context) + (message == null ? "" : message), args);
         }
     }
 
-    public static void error(Logger log, Map<String, ?> context, String message, Throwable t, Object... args) {
+    public static void error(
+            Logger log, Map<String, Object> context, String message, Throwable t, Object... args) {
         if (log != null && log.isErrorEnabled()) {
             final Object[] combined = (t == null) ? args : combineArgsWithThrowable(args, t);
             log.error(buildContextPrefix(context) + (message == null ? "" : message), combined);
         }
     }
 
-    public static StepTimer step(Logger log, Map<String, ?> context, String stepName) {
+    public static StepTimer step(Logger log, Map<String, Object> context, String stepName) {
         return new StepTimer(log, context, stepName);
     }
 
     public static final class StepTimer implements AutoCloseable {
         private final Logger log;
-        private final Map<String, ?> context;
+        private final Map<String, Object> context;
         private final String stepName;
         private final ClockUtils.Stopwatch stopwatch = ClockUtils.stopwatch();
 
-        private StepTimer(Logger log, Map<String, ?> context, String stepName) {
+        private StepTimer(Logger log, Map<String, Object> context, String stepName) {
             this.log = Objects.requireNonNull(log, "Logger must not be null.");
-            this.context = (context == null || context.isEmpty())
-                    ? Collections.emptyMap()
-                    : Collections.unmodifiableMap(new LinkedHashMap<>(context));
+            this.context =
+                    (context == null || context.isEmpty())
+                            ? Collections.emptyMap()
+                            : Collections.unmodifiableMap(new LinkedHashMap<>(context));
             this.stepName = (stepName == null) ? "Unnamed Step" : stepName;
             LoggingUtils.info(this.log, this.context, "START step: {}", this.stepName);
         }
@@ -74,17 +74,18 @@ public final class LoggingUtils {
         @Override
         public void close() {
             LoggingUtils.info(
-                    this.log,
-                    this.context,
-                    "END step: {} | took {}",
-                    this.stepName,
+                    this.log, this.context, "END step: {} | took {}", this.stepName,
                     ClockUtils.format(stopwatch.elapsed()));
         }
     }
 
     private static Object[] combineArgsWithThrowable(Object[] args, Throwable t) {
-        if (t == null) return args;
-        if (args == null || args.length == 0) return new Object[]{t};
+        if (t == null) {
+            return args;
+        }
+        if (args == null || args.length == 0) {
+            return new Object[] {t};
+        }
         final Object[] combined = new Object[args.length + 1];
         System.arraycopy(args, 0, combined, 0, args.length);
         combined[args.length] = t;
